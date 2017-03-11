@@ -146,6 +146,7 @@ class GameScene: SKScene {
             if !self.checkFireButtonActive(touch: t) {
                 joystick.run(SKAction.move(to: CGPoint(x: plate.position.x, y: plate.position.y), duration: 0.2))
                 spaceship.run(SKAction.rotate(toAngle: 0, duration: 0.2))
+                self.unitOffset = CGVector(dx:0, dy: 1)
             }
         }
     }
