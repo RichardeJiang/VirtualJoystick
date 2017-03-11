@@ -16,6 +16,8 @@ class GameScene: SKScene {
     
     private let plate = SKSpriteNode(imageNamed: "plate")
     private let joystick = SKSpriteNode(imageNamed: "top")
+    private let spaceship = SKSpriteNode(imageNamed: "Spaceship")
+    private let fireButton = SKSpriteNode(imageNamed: "fire")
     
     override func didMove(to view: SKView) {
         
@@ -29,26 +31,16 @@ class GameScene: SKScene {
         joystick.position = CGPoint(x: plate.position.x, y: plate.position.y)
         joystick.alpha = 0.8
         addChild(joystick)
-        // Default code by Xcode
-//        // Get label node from scene and store it for use later
-//        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-//        if let label = self.label {
-//            label.alpha = 0.0
-//            label.run(SKAction.fadeIn(withDuration: 2.0))
-//        }
-//        
-//        // Create shape node to use during mouse interaction
-//        let w = (self.size.width + self.size.height) * 0.05
-//        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
-//        
-//        if let spinnyNode = self.spinnyNode {
-//            spinnyNode.lineWidth = 2.5
-//            
-//            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(M_PI), duration: 1)))
-//            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-//                                              SKAction.fadeOut(withDuration: 0.5),
-//                                              SKAction.removeFromParent()]))
-//        }
+        //joystick.bringToFront()
+        joystick.zPosition = 2
+        
+        spaceship.size = CGSize(width: joystick.size.width, height: joystick.size.height)
+        spaceship.position = CGPoint(x: self.size.width / 2, y: self.size.height / 2)
+        addChild(spaceship)
+        
+        fireButton.size = CGSize(width: plate.size.width, height: plate.size.height)
+        fireButton.position = CGPoint(x: self.size.width * 0.9, y: self.size.height * 0.1)
+        addChild(fireButton)
     }
     
     
@@ -81,15 +73,53 @@ class GameScene: SKScene {
             label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
         }
         
-        for t in touches { self.touchDown(atPoint: t.location(in: self)) }
+        for t in touches {
+            if self.checkFireButtonActive(touch: t) {
+                print ("Fire in the hole!")
+            } else {
+                self.rotateJoystickAndSpaceship(touch: t)
+            }
+        }
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchMoved(toPoint: t.location(in: self)) }
+        for t in touches {
+            if !self.checkFireButtonActive(touch: t) {
+                self.rotateJoystickAndSpaceship(touch: t)
+            }
+        }
+    }
+    
+    private func rotateJoystickAndSpaceship(touch: UITouch) {
+        let location = touch.location(in: self)
+        let direction = CGVector(dx: location.x - plate.position.x, dy: location.y - plate.position.y)
+        let length = sqrt(direction.dx * direction.dx + direction.dy * direction.dy)
+        let directionVector = CGVector(dx: direction.dx / length, dy: direction.dy / length)
+        let rotationAngle = atan2(directionVector.dy, directionVector.dx) - CGFloat.pi / 2
+        var radius = plate.size.width / 2
+        if length < radius {
+            radius = length
+        }
+        joystick.position = CGPoint(x: plate.position.x + directionVector.dx * radius, y: plate.position.y + directionVector.dy * radius)
+        spaceship.zRotation = rotationAngle
+    }
+    
+    private func checkFireButtonActive(touch: UITouch) -> Bool {
+        let location = touch.location(in: self)
+        if fireButton.frame.contains(location) {
+            return true
+        } else {
+            return false
+        }
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
+        for t in touches {
+            if !self.checkFireButtonActive(touch: t) {
+                joystick.run(SKAction.move(to: CGPoint(x: plate.position.x, y: plate.position.y), duration: 0.2))
+                spaceship.run(SKAction.rotate(toAngle: 0, duration: 0.2))
+            }
+        }
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -99,5 +129,15 @@ class GameScene: SKScene {
     
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
+    }
+}
+
+extension SKNode {
+    func bringToFront() {
+        guard let parent = parent else {
+            return
+        }
+        removeFromParent()
+        parent.addChild(self)
     }
 }
