@@ -19,6 +19,10 @@ class GameScene: SKScene {
     private let spaceship = SKSpriteNode(imageNamed: "Spaceship")
     private let fireButton = SKSpriteNode(imageNamed: "fire")
     
+    private var xDestination: CGFloat = CGFloat(0)
+    private var yDestination: CGFloat = CGFloat(0)
+    private var unitOffset: CGVector = CGVector(dx: 0, dy: 1)
+    
     override func didMove(to view: SKView) {
         
         self.backgroundColor = SKColor.white
@@ -34,7 +38,9 @@ class GameScene: SKScene {
         //joystick.bringToFront()
         joystick.zPosition = 2
         
-        spaceship.size = CGSize(width: joystick.size.width, height: joystick.size.height)
+        spaceship.size = CGSize(width: plate.size.width * 0.8, height: plate.size.height * 0.8)
+//        spaceship.xScale = 1.2
+//        spaceship.yScale = 1.2
         spaceship.position = CGPoint(x: self.size.width / 2, y: self.size.height / 2)
         addChild(spaceship)
         
@@ -76,6 +82,8 @@ class GameScene: SKScene {
         for t in touches {
             if self.checkFireButtonActive(touch: t) {
                 print ("Fire in the hole!")
+                // add here for firing action
+                self.fire()
             } else {
                 self.rotateJoystickAndSpaceship(touch: t)
             }
@@ -95,6 +103,7 @@ class GameScene: SKScene {
         let direction = CGVector(dx: location.x - plate.position.x, dy: location.y - plate.position.y)
         let length = sqrt(direction.dx * direction.dx + direction.dy * direction.dy)
         let directionVector = CGVector(dx: direction.dx / length, dy: direction.dy / length)
+        self.unitOffset = directionVector
         let rotationAngle = atan2(directionVector.dy, directionVector.dx) - CGFloat.pi / 2
         var radius = plate.size.width / 2
         if length < radius {
@@ -111,6 +120,25 @@ class GameScene: SKScene {
         } else {
             return false
         }
+    }
+    
+    private func fire() {
+        let currentFiringAngle = spaceship.zRotation
+        let projectile = SKSpriteNode(imageNamed: "missile")
+        //projectile.size = CGSize(width: )
+        projectile.xScale = 0.3
+        projectile.yScale = 0.3
+        projectile.position = CGPoint(x: spaceship.position.x, y: spaceship.position.y)
+        projectile.zRotation = currentFiringAngle
+        projectile.zPosition = -1
+        
+        addChild(projectile)
+        let travel = CGVector(dx: self.unitOffset.dx * 1200, dy: self.unitOffset.dy * 1200)
+        let destination = CGPoint(x: spaceship.position.x + travel.dx, y: spaceship.position.y + travel.dy)
+        
+        projectile.run(SKAction.move(to: destination, duration: 3), completion: {
+            projectile.removeFromParent()
+        })
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
